@@ -1,17 +1,37 @@
 package org.labs.core.stock;
 
-final class AtomicFoodStock implements FoodStock {
+import java.util.concurrent.atomic.AtomicLong;
+
+public final class AtomicFoodStock implements FoodStock {
+    private final AtomicLong portions;
+
     public AtomicFoodStock(long initialPortions) {
-        // TODO: init atomic counter
+        if (initialPortions < 0) {
+            throw new IllegalArgumentException("initialPortions must be >= 0");
+        }
+        this.portions = new AtomicLong(initialPortions);
     }
 
     @Override
     public boolean tryTakeOne() {
-        throw new UnsupportedOperationException("Not implemented");
+        while (true) {
+            long current = portions.get();
+            if (current <= 0) {
+                return false;
+            }
+            if (portions.compareAndSet(current, current - 1)) {
+                return true;
+            }
+        }
     }
 
     @Override
     public long remaining() {
-        throw new UnsupportedOperationException("Not implemented");
+        return portions.get();
+    }
+
+    @Override
+    public String toString() {
+        return "AtomicFoodStock{remaining=" + portions.get() + '}';
     }
 }

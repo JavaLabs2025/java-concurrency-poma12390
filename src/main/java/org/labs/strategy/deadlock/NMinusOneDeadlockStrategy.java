@@ -1,17 +1,32 @@
 package org.labs.strategy.deadlock;
 
-final class NMinusOneDeadlockStrategy implements DeadlockAvoidanceStrategy {
+import java.util.concurrent.Semaphore;
+
+public final class NMinusOneDeadlockStrategy implements DeadlockAvoidanceStrategy {
+    private final Semaphore gate;
+
     public NMinusOneDeadlockStrategy(int participants) {
-        // TODO: инициализация семафора на (participants - 1)
+        this(participants, true);
+    }
+
+    public NMinusOneDeadlockStrategy(int participants, boolean fair) {
+        if (participants < 2) {
+            throw new IllegalArgumentException("participants must be >= 2");
+        }
+        this.gate = new Semaphore(participants - 1, fair);
     }
 
     @Override
     public void beforeAcquire(int programmerId) throws InterruptedException {
-        throw new UnsupportedOperationException("Not implemented");
+        gate.acquire();
     }
 
     @Override
     public void afterRelease(int programmerId) {
-        throw new UnsupportedOperationException("Not implemented");
+        gate.release();
+    }
+
+    public int availableSlots() {
+        return gate.availablePermits();
     }
 }
