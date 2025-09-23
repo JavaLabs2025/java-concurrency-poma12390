@@ -24,7 +24,6 @@ public final class EqualShareFairness implements FairnessStrategy {
 
     @Override
     public boolean tryEnterEat(int programmerId, long alreadyEaten) {
-        // Убедимся, что участник присутствует в карте (значение – завершённые порции).
         finishedPerProgrammer.computeIfAbsent(programmerId, k -> new AtomicLong(0L));
 
         long minFinished = currentMinFinished();

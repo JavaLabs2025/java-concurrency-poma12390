@@ -24,11 +24,11 @@ public final class Programmer implements Runnable {
     private final FairnessStrategy fairness;
     private final BlockingQueue<RefillRequest> refillQueue;
     private final FoodStock stock;
-    private final SimulationStats stats; // может быть null, если метрики не нужны
+    private final SimulationStats stats;
 
     private volatile ProgrammerState state = ProgrammerState.THINKING;
     private long portionsEaten = 0;
-    private boolean hasPortion = false; // локальная тарелка: есть ли непросаженная порция
+    private boolean hasPortion = false;
 
     public Programmer(
             int id,
