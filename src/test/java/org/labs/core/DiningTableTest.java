@@ -17,16 +17,10 @@ import org.labs.waiter.DefaultWaiter;
 import org.labs.waiter.Waiter;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.*;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.*;
 
 class DiningTableIntegrationTest {
 
@@ -54,7 +48,6 @@ class DiningTableIntegrationTest {
         for (int i = 0; i < N; i++) spoons.add(new LockingSpoon(i));
 
         List<Waiter> waiters = List.of(new DefaultWaiter(0, q, stock));
-        List<Thread> waiterThreads = List.of(new Thread(waiters.getFirst(), "waiter-0"));
 
         List<Programmer> programmers = new ArrayList<>(N);
         for (int i = 0; i < N; i++) {
@@ -63,7 +56,7 @@ class DiningTableIntegrationTest {
             programmers.add(new Programmer(i, left, right, cfg, deadlock, fairness, q, stock, stats));
         }
 
-        DiningTable table = new DiningTable(cfg, spoons, programmers, waiters, waiterThreads, q, stock, deadlock, fairness, stats);
+        DiningTable table = new DiningTable(cfg, spoons, programmers, waiters, q, stock, deadlock, fairness, stats);
 
         table.start();
         table.awaitCompletion();
@@ -79,7 +72,7 @@ class DiningTableIntegrationTest {
     }
 
     @Test
-    void shutdownNowInterruptsAndClears() {
+    void shutdownNowInterruptsAndClears() throws Exception {
         int N = 3;
         SimulationConfig cfg = SimulationConfig.builder()
                 .programmers(N).waiters(1).totalPortions(10_000) // специально много
@@ -99,27 +92,27 @@ class DiningTableIntegrationTest {
         for (int i = 0; i < N; i++) spoons.add(new LockingSpoon(i));
 
         List<Waiter> waiters = List.of(new DefaultWaiter(0, q, stock));
-        List<Thread> waiterThreads = List.of(new Thread(waiters.getFirst(), "waiter-0"));
 
         List<Programmer> programmers = new ArrayList<>(N);
         for (int i = 0; i < N; i++) {
             programmers.add(new Programmer(i, spoons.get(i), spoons.get((i + 1) % N), cfg, deadlock, fairness, q, stock, stats));
         }
 
-        DiningTable table = new DiningTable(cfg, spoons, programmers, waiters, waiterThreads, q, stock, deadlock, fairness, stats);
+        DiningTable table = new DiningTable(cfg, spoons, programmers, waiters, q, stock, deadlock, fairness, stats);
         table.start();
 
+        // Немного поработаем
         try { Thread.sleep(50); } catch (InterruptedException ignored) { }
 
+        // Аварийно остановим
         table.shutdownNow();
 
-        table.waiterThreads().forEach(t -> {
-            try { t.join(1000); } catch (InterruptedException ignored) { }
-            assertFalse(t.isAlive());
-        });
-        table.programmerThreads().forEach(t -> {
-            try { t.join(1000); } catch (InterruptedException ignored) { }
-            assertFalse(t.isAlive());
-        });
+        // Ждём завершение пулов
+        assertTrue(table.programmerExecutor().awaitTermination(2, TimeUnit.SECONDS), "Programmer pool did not terminate");
+        assertTrue(table.waiterExecutor().awaitTermination(2, TimeUnit.SECONDS), "Waiter pool did not terminate");
+
+        // Все задачи должны быть завершены/отменены
+        table.programmerTasks().forEach(f -> assertTrue(f.isDone() || f.isCancelled()));
+        table.waiterTasks().forEach(f -> assertTrue(f.isDone() || f.isCancelled()));
     }
 }

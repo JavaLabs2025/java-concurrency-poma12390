@@ -30,7 +30,7 @@ public final class Simulation {
     private static final ProgrammaticOverrides OVERRIDES = new ProgrammaticOverrides(
             7,          // programmers (Integer)   e.g. 7
             null,          // waiters (Integer)       e.g. 2
-            2000L,          // totalPortions (Long)    e.g. 1000
+            1000L,          // totalPortions (Long)    e.g. 1000
             null, null,    // thinkMinMs, thinkMaxMs (Long)
             null, null,    // eatMinMs,   eatMaxMs   (Long)
             null,          // acquireTimeoutMs        (Long)
@@ -58,12 +58,8 @@ public final class Simulation {
         }
 
         List<Waiter> waiters = new ArrayList<>(cfg.waiters());
-        List<Thread> waiterThreads = new ArrayList<>(cfg.waiters());
         for (int i = 0; i < cfg.waiters(); i++) {
-            Waiter w = new DefaultWaiter(i, refillQueue, stock);
-            Thread wt = new Thread(w, "waiter-" + i);
-            waiters.add(w);
-            waiterThreads.add(wt);
+            waiters.add(new DefaultWaiter(i, refillQueue, stock));
         }
 
         List<Programmer> programmers = new ArrayList<>(n);
@@ -76,7 +72,7 @@ public final class Simulation {
         }
 
         DiningTable table = new DiningTable(
-                cfg, spoons, programmers, waiters, waiterThreads,
+                cfg, spoons, programmers, waiters,
                 refillQueue, stock, deadlock, fairness, stats
         );
 
