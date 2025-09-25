@@ -36,6 +36,7 @@ public final class Simulation {
             null,          // acquireTimeoutMs        (Long)
             null           // fairShareRequired       (Boolean)
     );
+    private static final int SLACK = 2;
 
     public static void main(String[] args) {
         Thread.setDefaultUncaughtExceptionHandler((t, e) ->
@@ -201,7 +202,7 @@ public final class Simulation {
 
     private static FairnessStrategy chooseFairnessStrategy(SimulationConfig cfg) {
         if (!cfg.fairShareRequired()) return new NoopFairness();
-        return new EqualShareFairness(1);
+        return new EqualShareFairness(SLACK);
     }
 
     private static String next(String[] a, int idx, String name) {
